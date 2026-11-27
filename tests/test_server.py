@@ -65,3 +65,22 @@ def test_errors_reach_claude_as_text(fake_yahoo):
     result, _ = call("plan_add_drop", {})
     assert result.is_error
     assert "Give a player to add" in result.content[0].text
+
+
+def test_check_connection_reports_unapproved_app(fake_yahoo, monkeypatch, tmp_path):
+    from yahoo_fantasy_mcp import auth, server
+    from yahoo_fantasy_mcp.client import YahooAccessNotApproved
+
+    def refuse(path):
+        raise YahooAccessNotApproved("Yahoo hasn't approved this app for the Fantasy API yet.")
+
+    tokens = tmp_path / "tokens.json"
+    tokens.write_text("{}")
+    monkeypatch.setattr(server, "TOKENS_PATH", tokens)
+    monkeypatch.setattr(server, "client_credentials", lambda: ("id", "secret", "uri"))
+    monkeypatch.setattr(auth, "access_token", lambda force_refresh=False: "token")
+    monkeypatch.setattr(fake_yahoo, "get", refuse)
+    result, data = call("check_connection")
+    assert not result.is_error
+    assert data["signed_in"] and not data["api_access"] and not data["ok"]
+    assert "approved" in data["problem"]
