@@ -15,7 +15,7 @@ from mcp.types import ToolAnnotations
 from pydantic import BaseModel, Field
 
 from yahoo_fantasy_mcp import auth, lineup, prefs
-from yahoo_fantasy_mcp.client import YahooAPIError, YahooClient
+from yahoo_fantasy_mcp.client import YahooAccessNotApproved, YahooAPIError, YahooClient
 from yahoo_fantasy_mcp.config import TOKENS_PATH, ConfigError, client_credentials
 from yahoo_fantasy_mcp.parse import (
     label_stats,
@@ -175,9 +175,19 @@ def check_connection() -> dict:
     client_credentials()
     if not TOKENS_PATH.exists():
         raise ConfigError("Not signed in. Run `uv run yahoo-fantasy-mcp login` in the project folder.")
-    auth.access_token()
-    teams = _my_teams()
-    return {"ok": True, "nba_teams": len(teams), "default_team_key": prefs.get("default_team_key")}
+    auth.access_token()  # raises if the saved sign-in can't be refreshed
+    try:
+        teams = _my_teams()
+    except YahooAccessNotApproved as e:
+        return {"ok": False, "credentials": True, "signed_in": True, "api_access": False, "problem": str(e)}
+    return {
+        "ok": True,
+        "credentials": True,
+        "signed_in": True,
+        "api_access": True,
+        "nba_teams": len(teams),
+        "default_team_key": prefs.get("default_team_key"),
+    }
 
 
 @tool()

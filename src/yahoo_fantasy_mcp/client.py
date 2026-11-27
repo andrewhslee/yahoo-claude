@@ -20,6 +20,14 @@ class YahooAPIError(RuntimeError):
     pass
 
 
+class YahooAccessNotApproved(YahooAPIError):
+    """Sign-in worked, but Yahoo hasn't approved this app for the Fantasy API (HTTP 403).
+
+    Since July 2026 Yahoo refuses every Fantasy API call, reads included, from apps
+    that haven't been approved through https://sports.yahoo.com/developer/access/.
+    """
+
+
 def _error_description(text: str) -> str:
     try:
         return xmltodict.parse(text)["error"]["description"]
@@ -47,10 +55,12 @@ class YahooClient:
                 break
         assert response is not None
         if response.status_code == 403:
-            raise YahooAPIError(
-                "Yahoo says this app isn't authorized (403): "
-                f"{_error_description(response.text)}. New apps may need approval at "
-                "https://sports.yahoo.com/developer/access/ before the Fantasy API works."
+            raise YahooAccessNotApproved(
+                "Yahoo refused the request (403: "
+                f"{_error_description(response.text)}). Sign-in is fine; Yahoo hasn't approved "
+                "this app for the Fantasy API yet. Since July 2026 every Fantasy API call, reads "
+                "included, needs approval from https://sports.yahoo.com/developer/access/. "
+                "Nothing works until Yahoo approves the app."
             )
         if response.status_code == 999:
             raise YahooAPIError("Yahoo is rate-limiting requests (HTTP 999). Wait a few minutes and try again.")

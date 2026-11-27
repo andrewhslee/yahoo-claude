@@ -2,7 +2,9 @@
 
 An MCP server that lets Claude look after your Yahoo Fantasy NBA team: show the stats you care about, check and plan lineup changes and add/drops, and suggest lineups, pickups and trades.
 
-**Yahoo's Fantasy API is read-only for new apps.** So this server reads everything through the API. Changes are planned and checked here, then made on the Yahoo website, either by Claude in your browser using Claude in Chrome, or by you. If Yahoo ever grants this app write access, direct write tools can be added (see the end of this file).
+**Yahoo must approve your app before the Fantasy API answers at all.** Since July 2026, Yahoo refuses every Fantasy API call (reads included) with `403 This application is not authorized to perform this action` until the app is approved at <https://sports.yahoo.com/developer/access/>. Sign-in and token refresh still work before approval; only the data calls are refused. `check_connection` reports this as `signed_in: true, api_access: false`.
+
+**The API is read-only.** So this server reads everything through the API. Changes are planned and checked here, then made on the Yahoo website, either by Claude in your browser using Claude in Chrome, or by you. If Yahoo ever grants this app write access, direct write tools can be added (see the end of this file).
 
 ## How it fits together
 
@@ -17,7 +19,7 @@ Claude Code starts the server in the background when a session starts. Each `@to
 ## Setup
 
 1. **Create a Yahoo app** at <https://developer.yahoo.com/apps/create/>:
-   - API permissions: **Fantasy Sports – Read**
+   - The create form no longer lists a Fantasy Sports permission; access comes from step 5.
    - Redirect URI: `https://localhost:8000/callback`. If Yahoo rejects it, use `https://127.0.0.1:8000/callback` and set the same value in `.env`.
 2. **Add your credentials:** `cp .env.example .env`, then paste in the Client ID and Client Secret.
 3. **Sign in to Yahoo once:**
@@ -29,7 +31,7 @@ Claude Code starts the server in the background when a session starts. Each `@to
    ```bash
    claude mcp add yahoo-fantasy -s user -- uv --directory /Users/hanselee/projects/yahoo-claude run yahoo-fantasy-mcp
    ```
-5. **Optional: apply for write access** at <https://sports.yahoo.com/developer/access/>. A draft of the application is in [docs/yahoo-access-application.md](docs/yahoo-access-application.md).
+5. **Apply for API access (required)** at <https://sports.yahoo.com/developer/access/>. A draft of the application is in [docs/yahoo-access-application.md](docs/yahoo-access-application.md).
 
 ## Testing
 
